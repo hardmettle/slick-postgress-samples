@@ -1,8 +1,8 @@
 package models
 
 
-
-import _root_.order.{CommentComponent, OrderProductCommentUser, OrderProductCommentUserComponent, OrderComponent}
+import _root_.inventory.InventoryComponent
+import _root_.order._
 
 
 import play.api.db.slick.DB
@@ -13,7 +13,8 @@ import myUtils.MyPostgresDriver
 *
 */
 class DAO(override val driver: MyPostgresDriver) extends CustomerComponent with MyProfileComponent with RoleComponent with CustomerRoleComponent with JustRoleComponent
-with OrderComponent with OrderProductCommentUserComponent with CommentComponent{
+with OrderComponent with OrderProductCommentUserComponent with CommentComponent with OrderLifeCycleComponent
+with OrderLineComponent with InventoryComponent{
   import driver.simple._
 
   val customers = TableQuery(new Customers(_))
@@ -23,6 +24,9 @@ with OrderComponent with OrderProductCommentUserComponent with CommentComponent{
   val orders = TableQuery(new Orders(_))
   val orderproductcommentusers = TableQuery(new OrderProductCommentUsers(_))
   val ordercomments = TableQuery(new Comments(_))
+  val lifecycles = TableQuery(new OrderLifeCycles(_))
+  val lineitems = TableQuery(new OrderLines(_))
+  val inventories = TableQuery(new Inventories(_))
 }
 
 object current {

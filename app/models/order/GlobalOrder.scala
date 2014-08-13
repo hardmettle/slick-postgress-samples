@@ -8,6 +8,9 @@ import enumspckg.State._
 import models.Customer
 import myUtils.WithMyDriver
 
+import play.api.data.format.Formats
+import play.api.data.format.Formatter
+
 
 import scala.slick.lifted.{ForeignKeyQuery, Tag}
 
@@ -208,19 +211,20 @@ Represents the order life cycle of an order
 @param comments comments about the product in the order
 @param date date and time of placing the order
  */
-case class OrderLifeCycle(orderLifeCycleId: Long, status: OrderStatus, statusLabel: String, description: String, comments: List[Long], date: DateTime)
+case class OrderLifeCycle(orderLifeCycleId: Long, status: OrderStatus, statusLabel: String, description: String, commentId: Long, date: DateTime)
 
 /*
 class OrderSummary represnting the summary information about an order
 
 @constructor creates OrderSummary with OrderSummary orderNumber status amount productNames createdOn
 
+@param orderSummaryId Id as primary key of the order summary
 @param orderId Id number of the order
 @param orderNumber order number generated for the order
 @param productNames names of the product in the order
 @param createdOn date metadata information about the order
  */
-case class OrderSummary(orderId: Long, orderNumber: String, status: OrderStatus, amount: Double, productNames:List[String], createdOn: DateMetaData)
+case class OrderSummary(orderSummaryId: Long, orderId: Long, orderNumber: String, status: OrderStatus, amount: Double, productNames: List[String], createdOn: DateMetaData)
 
 /*
 class OrderDetail representing the full detail of the order placed
@@ -228,17 +232,18 @@ class OrderDetail representing the full detail of the order placed
 @constructor creates OrderDetail  class with productSummaryId lifeCycleId shippingAddressId owner
 dateMetaData,userMetaData, lineItems
 
+@params orderDetailId primary key id of this table
 @params productSummaryId mapping product summary to the order details
 @params lifeCycleId mapping order life cycle to order details
 @params shippingAddressId mapping shipping address to the order details
 @params owner mapping user to the order details
 @param dateMetaData It is the metadata related to the dateMetaData associated with product and order
 @param userMetaData It is the metadata related to the users associated with product and order
-@param lineItems It is a list of line items of the product included in order
+@param lineItemsId It is a list of line items of the product included in order
  */
 
-case class OrderDetail(productSummaryId: List[Long], lifeCycleId: Long, shippingAddressId: Long, owner: Long,
-                        dateMetaData: DateMetaData, userMetaData: UserMetaData, lineItems: List[Long])
+case class OrderDetail(orderDetailId: Long, productSummaryId: Long, lifeCycleId: Long, shippingAddressId: Long, owner: Long,
+                       dateMetaData: DateMetaData, userMetaData: UserMetaData, lineItemsId: Long)
 
 
 /*
@@ -331,11 +336,13 @@ trait EOrderComponent extends WithMyDriver {
   }
 
 }
+
 //import models.or//
 trait CommentComponent extends WithMyDriver {
 
   import driver.simple._
   import models.current.dao._
+
   class Comments(tags: Tag) extends Table[Comment](tags, "comment") {
 
     def commentId = column[Long]("commentId", O.AutoInc, O.PrimaryKey)
@@ -344,7 +351,7 @@ trait CommentComponent extends WithMyDriver {
 
     def comment = column[String]("comment")
 
-    def commentIdFK = foreignKey("fk_comment_id", commentId,orderproductcommentusers)(_.orderId)
+    def commentIdFK = foreignKey("fk_comment_id", commentId, orderproductcommentusers)(_.commentId)
 
     def createdOn = column[DateTime]("created_on")
 
@@ -415,9 +422,12 @@ trait OrderProductCommentUserComponent extends WithMyDriver {
   }
 
 }
+
 trait OrderStockRecordComponent extends WithMyDriver {
+
   import driver.simple._
-  class OrderStockRecords(tags:Tag) extends Table[OrderStockRecord](tags,"orderstockrecord"){
+
+  class OrderStockRecords(tags: Tag) extends Table[OrderStockRecord](tags, "orderstockrecord") {
 
     def orderId = column[Long]("orderid")
 
@@ -436,64 +446,97 @@ trait OrderStockRecordComponent extends WithMyDriver {
     def modifiedBy = column[Option[Long]]("modified_by")
 
     def userMetaData = (createdBy, modifiedBy) <>(UserMetaData.tupled, UserMetaData.unapply)
+
     import models.current.dao._
-    def orderIdFK = foreignKey("fk_order_id",orderId,orders)
+
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
 
     //def productIdFK = foreignKey("fk_role_id", productId, products)(_.id) //TBD
 
-    def * =  (orderId, productId,stockRecordId,createdOn,modifiedOn,dateMetaData,userMetaData)<>(OrderStockRecord.tupled,OrderStockRecord.unapply)
+    //def stockRecordId = foreignKey("fk_role_id", productId, products)(_.id) //TBD
+
+    def * = (orderId, productId, stockRecordId, dateMetaData, userMetaData) <>(OrderStockRecord.tupled, OrderStockRecord.unapply)
   }
+
 }
-trait OrderPaymentComponent extends WithMyDriver{
+
+trait OrderPaymentComponent extends WithMyDriver {
+
   import driver.simple._
   import models.current.dao._
-  class OrderPayments(tags:Tag) extends Table[OrderPayment](tags,"orderpayment"){
+
+  class OrderPayments(tags: Tag) extends Table[OrderPayment](tags, "orderpayment") {
     def orderId = column[Long]("orderid")
+
     def paymentId = column[Long]("paymentid")
-    def orderIdFK = foreignKey("fk_order_id",orderId,orders)
+
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
+
     //def productIdFK = foreignKey("fk_product_id", productId, products)(_.id) //TBD
-    def * = (orderId,paymentId)<>(OrderPayment.tupled,OrderPayment.unapply)
+    def * = (orderId, paymentId) <>(OrderPayment.tupled, OrderPayment.unapply)
   }
+
 }
 
-trait OrderPriceComponent extends WithMyDriver{
+trait OrderPriceComponent extends WithMyDriver {
+
   import driver.simple._
   import models.current.dao._
-  class OrderPrices(tags:Tag) extends Table[OrderPrice](tags,"orderprices"){
+
+  class OrderPrices(tags: Tag) extends Table[OrderPrice](tags, "orderprices") {
     def orderId = column[Long]("orderid")
+
     def orderPriceId = column[Long]("orderpriceid")
+
     def cost = column[Int]("cost")
+
     def taxId = column[Long]("taxid")
-    def orderIdFK = foreignKey("fk_order_id",orderId,orders)
+
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
+
     //def taxIdFK = foreignKey("fk_tax_id", taxId, taxes)(_.id) //TBD
-    def * = (orderId,orderPriceId,cost,taxId) <> (OrderPrice.tupled,OrderPrice.unapply)
+    //def orderPriceIdFK = foreignKey("fk_tax_id", orderPriceId, orderprices)(_.id) //TBD
+    def * = (orderId, orderPriceId, cost, taxId) <>(OrderPrice.tupled, OrderPrice.unapply)
   }
+
 }
-trait OrderLineComponent extends WithMyDriver{
+
+trait OrderLineComponent extends WithMyDriver {
 
   import driver.simple._
   import models.current.dao._
-  class OrderLines(tags:Tag) extends Table[OrderLine](tags,"orderlines"){
-    def orderLineId = column[Long]("orderlineid")
+
+  class OrderLines(tags: Tag) extends Table[OrderLine](tags, "orderlines") {
+
+    def orderLineId = column[Long]("orderlineid", O.AutoInc, O.PrimaryKey)
+
     def orderId = column[Long]("orderid")
+
     def productId = column[Long]("productid")
+
     def quantity = column[Int]("quantity")
+
     def price = column[Double]("price")
+
     def taxId = column[Long]("taxid")
 
-    def orderIdFK = foreignKey("fk_order_id",orderId,orders)
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
+
     //def productIdFK = foreignKey("fk_product_id", productId, products)(_.id) //TBD
     //def taxIdFK = foreignKey("fk_tax_id", taxId, taxes)(_.id) //TBD
-    def * = (orderLineId, orderId, productId,quantity,price,taxId)<>(OrderLine.tupled,OrderLine.unapply)
+    def * = (orderLineId, orderId, productId, quantity, price, taxId) <>(OrderLine.tupled, OrderLine.unapply)
   }
+
 }
+
 trait OrderLifeCycleComponent extends WithMyDriver {
+
   import driver.simple._
   import models.current.dao._
 
   class OrderLifeCycles(tags: Tag) extends Table[OrderLifeCycle](tags, "orderlifecycle") {
 
-    def orderLifeCycleId = column[Long]("orderlifecycleid")
+    def orderLifeCycleId = column[Long]("orderlifecycleid", O.AutoInc, O.PrimaryKey)
 
     def status = column[OrderStatus]("status")
 
@@ -503,20 +546,23 @@ trait OrderLifeCycleComponent extends WithMyDriver {
 
     def date = column[DateTime]("date")
 
-    def comments = column[List[Long]]("comments")
+    def commentId = column[Long]("commentid")
 
-    //def commentsIdFK = foreignKey("fk_comments_id",comments,ordercomments) // need to discuss
+    def commentsIdFK = foreignKey("fk_comments_id", commentId, ordercomments)(_.commentId) // need to discuss
 
-    def * = (orderLifeCycleId, status, statusLabel,description,date,comments)<>(OrderLifeCycle.tupled,OrderLifeCycle.unapply)
+    def * = (orderLifeCycleId, status, statusLabel, description, commentId, date) <>(OrderLifeCycle.tupled, OrderLifeCycle.unapply)
   }
 
 }
+
 trait OrderSummaryComponent extends WithMyDriver {
 
   import driver.simple._
   import models.current.dao._
 
   class OrderSummaries(tags: Tag) extends Table[OrderSummary](tags, "ordersummary") {
+
+    def orderSummaryId = column[Long]("ordersummaryid", O.AutoInc, O.PrimaryKey)
 
     def orderId = column[Long]("orderid")
 
@@ -526,7 +572,7 @@ trait OrderSummaryComponent extends WithMyDriver {
 
     def amount = column[Double]("amount")
 
-    def  productNames= column[List[String]]("productnames")
+    def productNames = column[List[String]]("productnames")
 
     def createdOn = column[DateTime]("created_on")
 
@@ -534,18 +580,54 @@ trait OrderSummaryComponent extends WithMyDriver {
 
     def dateMetaData = (createdOn, modifiedOn) <>(DateMetaData.tupled, DateMetaData.unapply)
 
-    def orderIdFK = foreignKey("fk_order_id",orderId,orders)
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
 
-    def * = (orderId,orderNumber,status,amount,productNames,createdOn,dateMetaData)<>(OrderSummary.tupled,OrderSummary.unapply)
+    def * = (orderSummaryId, orderId, orderNumber, status, amount, productNames, dateMetaData) <>(OrderSummary.tupled, OrderSummary.unapply)
   }
 
 }
+
 //case class OrderDetail(productSummaryId: List[Long], lifeCycleId: Long, shippingAddressId: Long, owner: Long,
 //dateMetaData: DateMetaData, userMetaData: UserMetaData, lineItems: List[Long])
 trait OrderDetailComponent extends WithMyDriver {
+
   import driver.simple._
   import models.current.dao._
-  class OrderDetails(tags:Tag) extends Table[OrderDetail](tags,"orderdetails"){
 
+  class OrderDetails(tags: Tag) extends Table[OrderDetail](tags, "orderdetails") {
+
+    def orderDetailId = column[Long]("order_detail_id", O.AutoInc, O.PrimaryKey)
+
+    def productSummaryId = column[Long]("prooductsummaryid")
+
+    def lifeCycleId = column[Long]("lifecycleid")
+
+    def shippingAddressId = column[Long]("shippingaddressid")
+
+    def owner = column[Long]("owner")
+
+    def createdOn = column[DateTime]("created_on")
+
+    def modifiedOn = column[Option[DateTime]]("modified_on")
+
+    def dateMetaData = (createdOn, modifiedOn) <>(DateMetaData.tupled, DateMetaData.unapply)
+
+    def createdBy = column[Long]("created_by")
+
+    def modifiedBy = column[Option[Long]]("modified_by")
+
+    def userMetaData = (createdBy, modifiedBy) <>(UserMetaData.tupled, UserMetaData.unapply)
+
+    def lineItemsId = column[Long]("line_items_id")
+
+    def lifecycleIdFK = foreignKey("fk_lifecycle_id", lifeCycleId, lifecycles)(_.orderLifeCycleId)
+
+    def shippingAddressIdFK = foreignKey("fk_shippingaddress_id", shippingAddressId, orders)(_.shippingAddressId)
+
+    def lineItemsIdFK = foreignKey("fk_lineitems_id", lineItemsId, lineitems)(_.orderLineId)
+
+    def * = (orderDetailId, productSummaryId, lifeCycleId, shippingAddressId, owner, dateMetaData, userMetaData, lineItemsId) <>
+      (OrderDetail.tupled, OrderDetail.unapply)
   }
+
 }

@@ -13,6 +13,7 @@ import enumspckg.AuthType.AuthType
 import enumspckg.Country.Country
 import enumspckg.Gender.Gender
 import enumspckg.Industry.Industry
+import enumspckg.MaritalStatus._
 import enumspckg.Registration.Registration
 import enumspckg.Salutation.Salutation
 import enumspckg.SocialNetwork.SocialNetwork
@@ -44,15 +45,15 @@ trait BaseUser extends User {
   def active: Boolean
 }
 
-case class Guest(username: String, status: Status, metadata: UserMetaData, id: ID, active: Boolean) extends BaseUser with ID
+case class Guest(username: String, status: Status, metadata: UserMetaData, id: Long, active: Boolean) extends BaseUser with ID
 
 case class Consumer(first_name: String, last_name: String, username: String, city: String, profession: String,
                     address: Address, country: Country, metadata: UserMetaData, state: String,
                     wedding_anniversary: DateTime, active: Boolean, dob: DateTime, salutation: Salutation,
                     mobile: String, gender: Gender, status: Status, telephone: String, email: String,
-                    avatar: String, marital_status: String, id: ID) extends BaseUser with AdditionalInfo with ID
+                    avatar: String, marital_status: MaritalStatus, id: Long) extends BaseUser with AdditionalInfo with ID
 
 case class TenantUser(username: String, status: Status, organisation: String,
                       url: String, industry: Industry, contacts: Seq[Contact], TAN: String,
                       company_size: (Int, Int), company_registration: Registration,
-                      social_links: SocialNetwork, id: ID) extends User with ID
+                      social_links: SocialNetwork, id: Long) extends User with ID

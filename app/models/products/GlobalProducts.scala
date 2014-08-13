@@ -42,10 +42,10 @@ sealed trait Media{
 case class Product(productId:Long,upc:String,name:String,description:String)  extends GlobalProducts
 
 case class ProductAdditional(productId:Long,upc:String,name:String,description:String,
-                   isDiscountable:Option[Boolean], isSaleable:Option[Boolean], isStockAvailable:Option[Boolean],
-                   isCOD:Option[Boolean], isRedeemable:Option[Boolean],isEtype:Option[Boolean],
-                   isEMIAvailable:Option[Boolean], isGiftWrapAvailable:Option[Boolean]
-                   , dates:DateMetaData, users:UserMetaData) extends GlobalProducts with Additional
+                             isDiscountable:Boolean, isSaleable:Boolean, isStockAvailable:Boolean,
+                             isCOD:Boolean, isRedeemable:Boolean,isEtype:Boolean,
+                             isEMIAvailable:Boolean, isGiftWrapAvailable:Boolean
+                             , dates:DateMetaData, users:UserMetaData) extends GlobalProducts with Additional
 
 
 case class ProductAttribute(productId:Long,upc:String,name:String,description:String,

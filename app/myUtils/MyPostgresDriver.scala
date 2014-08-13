@@ -6,10 +6,7 @@ import slick.driver.PostgresDriver
 
 import models.AccountStatuses
 
-import enumspckg.AddressType
-import enumspckg.Country
-import enumspckg.OrderStatus
-import enumspckg.State
+import enumspckg._
 
 trait WithMyDriver {
   val driver: MyPostgresDriver
@@ -65,6 +62,12 @@ with PgPostGISSupport {
 
     implicit val stateExtensionMethodsBuilder = createEnumColumnExtensionMethodsBuilder(State)
     implicit val stateOptionColumnExtensionMethodsBuilder = createEnumOptionColumnExtensionMethodsBuilder(State)
+
+    implicit val inventoryStatusTypeMapper = createEnumJdbcType("state",InventoryStatus)
+    implicit val inventoryStatusListTypeMapper = createEnumListJdbcType("state",InventoryStatus)
+
+    implicit val inventoryStatusExtensionMethodsBuilder = createEnumColumnExtensionMethodsBuilder(InventoryStatus)
+    implicit val inventoryStatusOptionColumnExtensionMethodsBuilder = createEnumOptionColumnExtensionMethodsBuilder(InventoryStatus)
   }
 
   //////
