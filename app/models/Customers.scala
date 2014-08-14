@@ -3,7 +3,64 @@ package models
 import com.vividsolutions.jts.geom.Point
 import org.joda.time.{LocalDateTime,DateTime}
 import play.api.libs.json.JsValue
+
 import myUtils.{WithMyDriver}
+import myUtils.MyPostgresDriver.simple._
+
+object ModelsConstants {
+  val ROLE = "Role"
+  val ADMIN = "Admin"
+  val SUPER_ADMIN = "SuperAdmin"
+}
+import ModelsConstants._
+
+trait Entity[PK] {
+  def id: Option[PK]
+}
+
+trait EntityTable[I] {
+  def id: scala.slick.lifted.Column[I]
+}
+
+trait Profile extends WithMyDriver {
+  //val profile: scala.slick.driver.JdbcProfile
+  val profile:scala.slick.driver.PostgresDriver
+  val simple:profile.simple.type = profile.simple
+}
+
+trait CrudComponent extends WithMyDriver{
+  import driver.simple._
+
+    abstract class Crud[T <: Table[E] with EntityTable[PK], E <: Entity[PK], PK: BaseColumnType] {
+      val query: TableQuery[T]
+        private val byIdCompiled = Compiled{ (id: Column[PK]) => query.filter(_.id === id) }
+        def count(implicit s: Session): Int = query.length.run
+        def findAll(implicit s: Session): List[E] = query.list
+        def queryById(id: PK)(implicit s: Session) = byIdCompiled(id)
+        def findById(id: PK)(implicit s: Session): Option[E] = byIdCompiled(id).firstOption
+        def findOne(id: PK)(implicit s: Session): Option[E] = queryById(id).firstOption
+        def add(m: E)(implicit s: Session): PK = (query returning query.map(_.id)) += m
+        def withId(model: E, id: PK)(implicit s: Session): E
+        def extractId(m: E)(implicit s: Session): Option[PK] = m.id
+        def save(m: E)(implicit s: Session): E = extractId(m) match {
+          case Some(id) =>
+            queryById(id).update(m)
+            m
+            case None => withId(m, add(m))
+        }
+        def saveAll(ms: E*)(implicit s: Session): Option[Int] = query ++= ms
+        def deleteById(id: PK)(implicit s: Session): Int = queryById(id).delete
+        def delete(m: E)(implicit s: Session): Int = extractId(m) match {
+          case Some(id) => deleteById(id)
+          case None => -1
+        }
+        def update(entity: E)(implicit s: Session): Unit      = entity.id.map{ id =>
+              byIdCompiled(id).update(entity)
+        }.getOrElse{
+              throw new Exception("cannot update entity without id")
+        }
+    }
+}
 
 object AccountStatuses extends Enumeration {
   type AccountStatus = Value
@@ -15,24 +72,17 @@ sealed trait Active
 case object Enabled extends Active
 case object Disabled extends Active
 
-sealed trait BaseRole {
-  def id:Option[Int]
+sealed trait BaseRole extends Entity[Int]{
   def code:String
   def name:String
-}
-case object SuperAdmin extends BaseRole {
-  val id = Some(1)
-  val code = "Super"
-  val name = "SuperAdmin"
-  val isAdmin = true
-  val isSuperAdmin = true
-}
-trait WithAdminRole {
-  final val isAdmin:Boolean = true
+  def isAdmin:Boolean
+  def isSuperAdmin:Option[Boolean]
+  def modelType:String
 }
 
-case class Role(val id:Option[Int], val code:String, name:String, isAdmin:Boolean = false) extends BaseRole
-case class Admin(val id:Option[Int], val code:String, name:String) extends BaseRole with WithAdminRole
+case class Role(val id:Option[Int] = None, val code:String, name:String, override val isAdmin:Boolean = false, final val isSuperAdmin:Option[Boolean] = None,final val modelType:String = ROLE) extends BaseRole
+case class Admin(val id:Option[Int] = None, val code:String, name:String, override final val isAdmin:Boolean = true, final val isSuperAdmin:Option[Boolean] = None,final val modelType:String = ADMIN) extends BaseRole 
+case class SuperAdmin(val id:Option[Int] = None, val code:String, name:String, override final val isAdmin:Boolean = true, final val isSuperAdmin:Option[Boolean] = Some(true),final val modelType:String = SUPER_ADMIN) extends BaseRole 
 
 
 case class Address(line1:String, line2:Option[String], city:String)
@@ -48,9 +98,9 @@ case class Customer(
   others: Option[JsValue],
   enabled:Active,
   createdOn:DateTime
-)
+) extends Entity[Int]
 
-trait CustomerComponent extends WithMyDriver{
+trait CustomerComponent extends CrudComponent{
   import driver.simple._
 object ActiveImplicits {
   implicit val activeTypeMapper = MappedColumnType.base[Active, Boolean](
@@ -71,7 +121,7 @@ object ActiveImplicits {
 }
   import ActiveImplicits._
 
-  class Customers(tag: Tag) extends Table[Customer](tag, "users") {
+  class Customers(tag: Tag) extends Table[Customer](tag, "users") with EntityTable[Int] {
     def id = column[Int]("id", O.AutoInc, O.PrimaryKey)
     def name = column[String]("name")
     def email = column[String]("email")
@@ -92,21 +142,10 @@ object ActiveImplicits {
 
     def * = (id.?, name, email, address, status, active, dob, interests, others, enabled, createdOn) <> (Customer.tupled, Customer.unapply)
   }
-}
 
-trait JustRoleComponent extends WithMyDriver{
-  import driver.simple._
-  import scala.slick.lifted.{ProvenShape, ForeignKeyQuery}
-
-  class JustRoles(tag: Tag) extends Table[Role](tag, "just_roles") {
-    def id = column[Int]("id", O.AutoInc, O.PrimaryKey)
-    def code = column[String]("code")
-    def name = column[String]("name")
-    def isAdmin = column[Boolean]("is_admin", O.Default(false))
-    def isSuperAdmin = column[Option[Boolean]]("is_admin")
-    def modelType = column[String]("model_type")
-
-    def * :ProvenShape[Role] = (id.?,code,name,isAdmin) <> (Role.tupled,Role.unapply)
+  object Customers extends Crud[Customers, Customer, Int] {
+    val query = TableQuery[Customers]
+    override def withId(user: Customer, id: Int)(implicit session: Session): Customer = user.copy(id = Option(id))
   }
 }
 
@@ -120,39 +159,69 @@ trait CustomerRoleComponent extends WithMyDriver{
     def userId = column[Int]("user_id")
     def roleId = column[Int]("role_id")
     def * : ProvenShape[CustomerToRoleType] = (userId,roleId)
-    def userIdFK:ForeignKeyQuery[Customers,Customer] = foreignKey("fk_user_id", userId, customers)(a => a.id)
-    def roleIdFK:ForeignKeyQuery[JustRoles,Role] = foreignKey("fk_role_id", roleId, justroles)(a => a.id)
+    def userIdFK:ForeignKeyQuery[Customers,Customer] = foreignKey("fk_user_id", userId, TableQuery[Customers])(a => a.id)
+    def roleIdFK:ForeignKeyQuery[BaseRoles,BaseRole] = foreignKey("fk_role_id", roleId, baseroles)(a => a.id)
   }
 }
 
-trait RoleComponent extends WithMyDriver{
+trait RoleComponent extends CrudComponent{
   import driver.simple._
   import models.current.dao._
   import scala.slick.lifted.{Query, ProvenShape, ForeignKeyQuery}
-
-  class Roles(tag: Tag) extends Table[BaseRole](tag, "roles") {
+  
+  abstract class AbstractRoles[T](tag: Tag) extends Table[T](tag, "roles") with EntityTable[Int]{
     def id = column[Int]("id", O.AutoInc, O.PrimaryKey)
     def code = column[String]("code")
     def name = column[String]("name")
     def isAdmin = column[Boolean]("is_admin", O.Default(false))
-    def isSuperAdmin = column[Option[Boolean]]("is_admin")
+    def isSuperAdmin = column[Option[Boolean]]("is_super_admin")
     def modelType = column[String]("model_type")
+    def * :ProvenShape[T] 
+  }
 
+  /*
+  class Roles(tag:Tag) extends AbstractRoles[Role](tag) {
+    def *  = (id.?,code,name,isAdmin,isSuperAdmin.?,modelType).shaped <> (Role.tupled, Role.unapply)
+  }
+  object Roles extends Crud[Roles, Role, Int] {
+    val query = TableQuery[Roles]
+    override def withId(role: Role, id: Int)(implicit session: Session): Role = role.copy(id = Option(id))
+  }
+  class Admins(tag:Tag) extends AbstractRoles[Admin](tag) {
+    def *  = (id.?,code,name,isAdmin,isSuperAdmin,modelType).shaped <> (Admin.tupled, Admin.unapply)
+  }
+  object Admins extends Crud[Admins, Admin, Int] {
+    val query = TableQuery[Admins]
+    override def withId(role: Admin, id: Int)(implicit session: Session): Admin = role.copy(id = Option(id))
+  }
+  class SuperAdmins(tag:Tag) extends AbstractRoles[SuperAdmin](tag) {
+    def *  = (id.?,code,name,isAdmin,isSuperAdmin,modelType).shaped <> (SuperAdmin.tupled, SuperAdmin.unapply)
+  }
+  */
+
+  class BaseRoles(tag: Tag) extends AbstractRoles[BaseRole](tag) {
     def * :ProvenShape[BaseRole] = (id.?,code,name,isAdmin,isSuperAdmin,modelType).shaped <> ({ t => t match {
-        case (a:Option[Int],b,c,d,x @ Some(true),y @ "SuperAdmin") => SuperAdmin:BaseRole
-        case (a:Option[Int],b,c,d @ true,x @ None,y @ "AdminRole") => Admin(a,b,c):BaseRole
-        case (a:Option[Int],b,c,d:Boolean,x @ None,y @ "Role") => Role(a,b,c,d):BaseRole
-        case (a:Option[Int],b,c,d:Boolean,_,_) => Role(a,b,c,d):BaseRole
+        case (a:Option[Int],b,c,d,x @ Some(true),y @ SUPER_ADMIN) => SuperAdmin(a,b,c):BaseRole
+        case (a:Option[Int],b,c,d @ true,x @ None,y @ ADMIN) => Admin(a,b,c):BaseRole
+        case (a:Option[Int],b,c,d,e,f) => Role(a,b,c,d,e,f):BaseRole
       }
     },
     {t:BaseRole => t match {
-      case SuperAdmin => Some((SuperAdmin.id,SuperAdmin.code,SuperAdmin.name,SuperAdmin.isAdmin,Some(true),SuperAdmin.name))
-      case Admin(a,b,c) => Some((a,b,c,true,None,"AdminRole"))
-      case Role(a,b,c,d) => Some((a,b,c,d,None,"Role"))
+      case SuperAdmin(a,b,c,true,Some(true),SUPER_ADMIN) => Some((a,b,c,true,Some(true),SUPER_ADMIN))
+      case Admin(a,b,c,true,None,ADMIN) => Some((a,b,c,true,None,ADMIN))
+      case Role(a,b,c,d,None,ROLE) => Some((a,b,c,d,None,ROLE))
+      case _ => None
       }
     }
     )
   }
 
-  val roles = TableQuery[Roles]
+  object BaseRoles extends Crud[BaseRoles, BaseRole, Int] {
+    val query = TableQuery[BaseRoles]
+    override def withId(role: BaseRole, id: Int)(implicit session: Session): BaseRole = role match {
+      case x @ SuperAdmin(_,_,_,_,_,_) => x.copy(id = Option(id))
+      case x @ Admin(_,_,_,_,_,_) => x.copy(id = Option(id))
+      case x @ Role(_,_,_,_,_,_) => x.copy(id = Option(id))
+    }
+  }
 }

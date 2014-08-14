@@ -22,6 +22,9 @@ object Application extends Controller{
   def index = DBAction { implicit rs =>
     val data = customers.list
     println(s"Data list: $data")
+    println(s"No of customers: ${Customers.count}")
+    println(s"Customer with id - 1: ${Customers.findById(1)}")
+    //Customers.deleteById(1)
     Ok(views.html.index(data))
   }
 
@@ -173,6 +176,38 @@ object Application extends Controller{
     println(s"Incoming profile: $my")
     myprofiles.insert(my)
     Redirect(routes.Application.profiles)
+          })
+  }
+  
+  val roleForm = Form(
+    mapping(
+      "id" -> optional(number),
+      "code" -> nonEmptyText,
+      "name" -> nonEmptyText,
+      "isAdmin" -> boolean,
+      "isSuperAdmin" -> optional(boolean),
+      "modelType" -> nonEmptyText
+    )(Role.apply)(Role.unapply)
+  )
+  
+  def roleslist = DBAction { implicit rs =>
+    val data = baseroles.list
+    println(s"Data list: $data")
+    baseroles.insert(Admin(code = "admin", name = "Admin"))
+    Ok(views.html.role(data))
+  }
+  
+  def addRole = DBAction{ implicit rs =>
+  roleForm.bindFromRequest.fold(
+          errors => {
+            println(s"ERRORS:$errors")
+          Redirect(routes.Application.roleslist)
+          },
+          my => {
+    val my = roleForm.bindFromRequest.get
+    println(s"Incoming role: $my")
+    baseroles.insert(my)
+    Redirect(routes.Application.roleslist)
           })
   }
 }

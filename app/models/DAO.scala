@@ -8,6 +8,7 @@ import _root_.order._
 import play.api.db.slick.DB
 import myUtils.MyPostgresDriver
 
+import scala.slick.lifted.{Query, ProvenShape, ForeignKeyQuery}
 /**
 * All tables can be configured here for DAO operations
 *
@@ -16,10 +17,10 @@ class DAO(override val driver: MyPostgresDriver) extends CustomerComponent with 
 with OrderComponent with OrderProductCommentUserComponent with CommentComponent with OrderLifeCycleComponent
 with OrderLineComponent with InventoryComponent{
   import driver.simple._
-
-  val customers = TableQuery(new Customers(_))
-  val myprofiles = TableQuery(new MyProfiles(_))
-  val justroles = TableQuery[JustRoles]
+  object customers extends TableQuery(new Customers(_))
+  object myprofiles extends TableQuery(new MyProfiles(_))
+  //object roles extends TableQuery(new Roles(_))
+  object baseroles extends TableQuery(tag => new BaseRoles(tag))
   //val roles = TableQuery[Roles]
   val orders = TableQuery(new Orders(_))
   val orderproductcommentusers = TableQuery(new OrderProductCommentUsers(_))
