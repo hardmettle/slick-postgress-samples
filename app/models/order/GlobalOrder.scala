@@ -5,7 +5,7 @@ import enumspckg.AddressType._
 import enumspckg.Country._
 import enumspckg.OrderStatus._
 import enumspckg.State._
-import models.Customer
+import models.{CrudComponent, EntityTable, Entity, Customer}
 import myUtils.WithMyDriver
 
 import play.api.data.format.Formats
@@ -41,8 +41,7 @@ def products the list of products present in the order
 def user the option of user metadata
 def displayStatus the status of display of the order on UI
  */
-sealed trait BaseOrder {
-  def orderId: Long
+sealed trait BaseOrder extends Entity[Long] {
 
   def orderNumber: String
 
@@ -64,7 +63,7 @@ Order class which represents one of the type of orders a user can place.Extends 
 Shipping Address
 
 @constructor creates an order with various attributes of an order
-@param orderId the id of the order
+@param id the id of the order
 @param orderNumber the order number generated during creation of the order
 @param amount the total amount worth of the order
 @param numberOfItems the total items present in the order
@@ -87,7 +86,7 @@ Shipping Address
 @param alternatePhone alternate phone number of user where he can be contacted . It is optional
 
  */
-case class Order(orderId: Long, orderNumber: String, amount: Double, numberOfItems: Int, ownerId: Long, products: List[String],
+case class Order(id: Option[Long], orderNumber: String, amount: Double, numberOfItems: Int, ownerId: Long, products: List[String],
                  userMetaData: UserMetaData, displayStatus: String,
                  line1: String, line2: String, line3: Option[String], zipCode: Long, landmark: String,
                  location: String, state: State, country: Country, addressType: AddressType,
@@ -108,7 +107,7 @@ and can be downloaded or sent online . for e.g pdf books .Extends the super trai
 @param displayStatus the status of display of the order on UI
 */
 
-case class EOrder(orderId: Long, orderNumber: String, amount: Double, numberOfItems: Int, ownerId: Long, products: List[String],
+case class EOrder(id: Option[Long], orderNumber: String, amount: Double, numberOfItems: Int, ownerId: Long, products: List[String],
                   userMetaData: UserMetaData, displayStatus: String) extends BaseOrder
 
 /*
@@ -119,7 +118,7 @@ Comment added to an order while placing it
 @param dateMetaData the date metadata of the order
 @param userMetaData the user metadata of the order
  */
-case class Comment(commentId: Long, orderId: Long, comment: String, dateMetaData: DateMetaData, userMetaData: UserMetaData)
+case class Comment(id: Option[Long], orderId: Long, comment: String, dateMetaData: DateMetaData, userMetaData: UserMetaData) extends Entity[Long]
 
 /*
 OrderProduct class which represent a mapping between an order with the corresponding product included in it.
@@ -134,7 +133,8 @@ OrderProduct class which represent a mapping between an order with the correspon
 
  */
 
-case class OrderProduct(orderId: Long, productId: Long, quantity: Int, status: OrderStatus, dateMetaData: DateMetaData, userMetaData: UserMetaData)
+case class OrderProduct(id: Option[Long], orderId: Long, productId: Long, quantity: Int, status: OrderStatus,
+                        dateMetaData: DateMetaData, userMetaData: UserMetaData) extends Entity[Long]
 
 
 /*
@@ -146,7 +146,7 @@ OrderProductCommentUser  class represents a mapping between order product commen
 @param commentId id of the comment
 @param userId id of the user
  */
-case class OrderProductCommentUser(orderId: Long, productId: Long, commentId: Long, userID: Long)
+case class OrderProductCommentUser(id: Option[Long], orderId: Long, productId: Long, commentId: Long, userID: Long) extends Entity[Long]
 
 /*
 OrderStockRecord class which represent a mapping between an order with the corresponding stock record of products
@@ -161,7 +161,8 @@ OrderStockRecord class which represent a mapping between an order with the corre
 
  */
 
-case class OrderStockRecord(orderId: Long, productId: Long, stockRecordId: Long, dateMetaData: DateMetaData, userMetaData: UserMetaData)
+case class OrderStockRecord(id: Option[Long], orderId: Long, productId: Long, stockRecordId: Long,
+                            dateMetaData: DateMetaData, userMetaData: UserMetaData) extends Entity[Long]
 
 /*
 class OrderPayment representing mapping between order and the payment made for it
@@ -170,7 +171,13 @@ class OrderPayment representing mapping between order and the payment made for i
 @param orderId Id number of the order
 @param productId Id number of the product
  */
-case class OrderPayment(orderId: Long, paymentId: Long)
+case class OrderPayment(id: Option[Long], orderId: Long, paymentId: Long) extends Entity[Long]
+
+
+/*
+=============================================For the Display on UI=============================================
+ */
+
 
 /*
 class OrderPrice representing mapping between order and the pricing detail related to it
@@ -181,7 +188,7 @@ class OrderPrice representing mapping between order and the pricing detail relat
 @param cost total cost of the order
 @param productId Id number of the product
  */
-case class OrderPrice(orderId: Long, orderPriceId: Long, cost: Int, taxId: Long)
+case class OrderPrice(id: Option[Long], orderId: Long, orderPriceId: Long, cost: Int, taxId: Long) extends Entity[Long]
 
 /*
 class OrderLine representing list of all items in an order
@@ -194,11 +201,8 @@ class OrderLine representing list of all items in an order
 @param price price of the order in that order line
 @param taxId Id number of the tax applied
  */
-case class OrderLine(orderLineId: Long, orderId: Long, productId: Long, quantity: Int, price: Double, taxID: Long)
+case class OrderLine(id: Option[Long], orderId: Long, productId: Long, quantity: Int, price: Double, taxID: Long) extends Entity[Long]
 
-/*
-For the Display on UI
- */
 
 /*
 Represents the order life cycle of an order
@@ -211,10 +215,11 @@ Represents the order life cycle of an order
 @param comments comments about the product in the order
 @param date date and time of placing the order
  */
-case class OrderLifeCycle(orderLifeCycleId: Long, status: OrderStatus, statusLabel: String, description: String, commentId: Long, date: DateTime)
+case class OrderLifeCycle(id: Option[Long], status: OrderStatus, statusLabel: String,
+                          description: String, commentId: Long, date: DateTime) extends Entity[Long]
 
 /*
-class OrderSummary represnting the summary information about an order
+class OrderSummary representing the summary information about an order
 
 @constructor creates OrderSummary with OrderSummary orderNumber status amount productNames createdOn
 
@@ -224,7 +229,8 @@ class OrderSummary represnting the summary information about an order
 @param productNames names of the product in the order
 @param createdOn date metadata information about the order
  */
-case class OrderSummary(orderSummaryId: Long, orderId: Long, orderNumber: String, status: OrderStatus, amount: Double, productNames: List[String], createdOn: DateMetaData)
+case class OrderSummary(id: Option[Long], orderId: Long, orderNumber: String,
+                        status: OrderStatus, amount: Double, productNames: List[String], createdOn: DateMetaData) extends Entity[Long]
 
 /*
 class OrderDetail representing the full detail of the order placed
@@ -242,19 +248,20 @@ dateMetaData,userMetaData, lineItems
 @param lineItemsId It is a list of line items of the product included in order
  */
 
-case class OrderDetail(orderDetailId: Long, productSummaryId: Long, lifeCycleId: Long, shippingAddressId: Long, owner: Long,
-                       dateMetaData: DateMetaData, userMetaData: UserMetaData, lineItemsId: Long)
+case class OrderDetail(id: Option[Long], productSummaryId: Long, lifeCycleId: Long, shippingAddressId: Long, owner: Long,
+                       dateMetaData: DateMetaData, userMetaData: UserMetaData, lineItemsId: Long) extends Entity[Long]
 
 
 /*
 ================== Table Definition =================
  */
-trait OrderComponent extends WithMyDriver {
+trait OrderComponent extends CrudComponent {
 
   import driver.simple._
 
-  class Orders(tags: Tag) extends Table[Order](tags, "orders") {
-    def orderId = column[Long]("orderid", O.AutoInc, O.PrimaryKey)
+  class Orders(tags: Tag) extends Table[Order](tags, "orders") with EntityTable[Long] {
+
+    def id = column[Long]("orderid", O.AutoInc, O.PrimaryKey)
 
     def orderNumber = column[String]("order_number")
 
@@ -298,19 +305,25 @@ trait OrderComponent extends WithMyDriver {
 
     def shippingAddressId = column[Long]("shipping_address_id")
 
-    def * = (orderId, orderNumber, amount, numberOfItems, ownerId, products, userMetaData, displayStatus, line1, line2, line3, zipCode,
+    def * = (id.?, orderNumber, amount, numberOfItems, ownerId, products, userMetaData, displayStatus, line1, line2, line3, zipCode,
       landmark, location, state, country, addressType, phone, alternatePhone, shippingAddressId) <>(Order.tupled, Order.unapply)
+  }
+
+  object Orders extends Crud[Orders, Order, Long] {
+    val query = TableQuery[Orders]
+
+    override def withId(order: Order, id: Long)(implicit session: Session): Order = order.copy(id = Option(id))
   }
 
 }
 
-trait EOrderComponent extends WithMyDriver {
+trait EOrderComponent extends CrudComponent {
 
   import driver.simple._
 
-  class EOrders(tags: Tag) extends Table[EOrder](tags, "eorders") {
+  class EOrders(tags: Tag) extends Table[EOrder](tags, "eorders") with EntityTable[Long] {
 
-    def orderId = column[Long]("orderid", O.AutoInc, O.PrimaryKey)
+    def id = column[Long]("order_id", O.AutoInc, O.PrimaryKey)
 
     def orderNumber = column[String]("order_number")
 
@@ -330,28 +343,34 @@ trait EOrderComponent extends WithMyDriver {
 
     def displayStatus = column[String]("display_status")
 
-    def * = (orderId, orderNumber, amount, numberOfItems, ownerId, products, userMetaData, displayStatus) <>
+    def * = (id.?, orderNumber, amount, numberOfItems, ownerId, products, userMetaData, displayStatus) <>
       (EOrder.tupled, EOrder.unapply)
 
+  }
+
+  object EOrders extends Crud[EOrders, EOrder, Long] {
+    val query = TableQuery[EOrders]
+
+    override def withId(eorder: EOrder, id: Long)(implicit session: Session): EOrder = eorder.copy(id = Option(id))
   }
 
 }
 
 //import models.or//
-trait CommentComponent extends WithMyDriver {
+trait CommentComponent extends CrudComponent {
 
   import driver.simple._
   import models.current.dao._
 
-  class Comments(tags: Tag) extends Table[Comment](tags, "comment") {
+  class Comments(tags: Tag) extends Table[Comment](tags, "comment") with EntityTable[Long] {
 
-    def commentId = column[Long]("commentId", O.AutoInc, O.PrimaryKey)
+    def id = column[Long]("commentId", O.AutoInc, O.PrimaryKey)
 
     def orderId = column[Long]("orderid")
 
     def comment = column[String]("comment")
 
-    def commentIdFK = foreignKey("fk_comment_id", commentId, orderproductcommentusers)(_.commentId)
+    def commentIdFK = foreignKey("fk_comment_id", id, orderproductcommentusers)(_.commentId)
 
     def createdOn = column[DateTime]("created_on")
 
@@ -365,17 +384,25 @@ trait CommentComponent extends WithMyDriver {
 
     def userMetaData = (createdBy, modifiedBy) <>(UserMetaData.tupled, UserMetaData.unapply)
 
-    def * = (commentId, orderId, comment, dateMetaData, userMetaData) <>(Comment.tupled, Comment.unapply)
+    def * = (id.?, orderId, comment, dateMetaData, userMetaData) <>(Comment.tupled, Comment.unapply)
 
+  }
+
+  object Comments extends Crud[Comments, Comment, Long] {
+    val query = TableQuery[Comments]
+
+    override def withId(comment: Comment, id: Long)(implicit session: Session): Comment = comment.copy(id = Option(id))
   }
 
 }
 
-trait OrderProductComponent extends WithMyDriver {
+trait OrderProductComponent extends CrudComponent {
 
   import driver.simple._
 
-  class OrderProducts(tags: Tag) extends Table[OrderProduct](tags, "orderproduct") {
+  class OrderProducts(tags: Tag) extends Table[OrderProduct](tags, "orderproduct") with EntityTable[Long] {
+
+    def id = column[Long]("order_product_id", O.AutoInc, O.PrimaryKey)
 
     def orderId = column[Long]("orderid")
 
@@ -397,17 +424,25 @@ trait OrderProductComponent extends WithMyDriver {
 
     def userMetaData = (createdBy, modifiedBy) <>(UserMetaData.tupled, UserMetaData.unapply)
 
-    def * = (orderId, productId, quantity, status, dateMetaData, userMetaData) <>(OrderProduct.tupled, OrderProduct.unapply)
+    def * = (id.?, orderId, productId, quantity, status, dateMetaData, userMetaData) <>(OrderProduct.tupled, OrderProduct.unapply)
 
+  }
+
+  object OrderProducts extends Crud[OrderProducts, OrderProduct, Long] {
+    val query = TableQuery[OrderProducts]
+
+    override def withId(orderproduct: OrderProduct, id: Long)(implicit session: Session): OrderProduct = orderproduct.copy(id = Option(id))
   }
 
 }
 
-trait OrderProductCommentUserComponent extends WithMyDriver {
+trait OrderProductCommentUserComponent extends CrudComponent {
 
   import driver.simple._
 
-  class OrderProductCommentUsers(tags: Tag) extends Table[OrderProductCommentUser](tags, "orderproductcommentuser") {
+  class OrderProductCommentUsers(tags: Tag) extends Table[OrderProductCommentUser](tags, "orderproductcommentuser") with EntityTable[Long] {
+
+    def id = column[Long]("order_product_comment_user_id", O.AutoInc, O.PrimaryKey)
 
     def orderId = column[Long]("orderid")
 
@@ -417,17 +452,26 @@ trait OrderProductCommentUserComponent extends WithMyDriver {
 
     def userId = column[Long]("userid")
 
-    def * = (orderId, productId, commentId, userId) <>(OrderProductCommentUser.tupled, OrderProductCommentUser.unapply)
+    def * = (id.?, orderId, productId, commentId, userId) <>(OrderProductCommentUser.tupled, OrderProductCommentUser.unapply)
 
+  }
+
+  object OrderProductCommentUsers extends Crud[OrderProductCommentUsers, OrderProductCommentUser, Long] {
+    val query = TableQuery[OrderProductCommentUsers]
+
+    override def withId(orderproductcommentuser: OrderProductCommentUser, id: Long)(implicit session: Session): OrderProductCommentUser
+    = orderproductcommentuser.copy(id = Option(id))
   }
 
 }
 
-trait OrderStockRecordComponent extends WithMyDriver {
+trait OrderStockRecordComponent extends CrudComponent {
 
   import driver.simple._
 
-  class OrderStockRecords(tags: Tag) extends Table[OrderStockRecord](tags, "orderstockrecord") {
+  class OrderStockRecords(tags: Tag) extends Table[OrderStockRecord](tags, "orderstockrecord") with EntityTable[Long] {
+
+    def id = column[Long]("order_stockrecord_id", O.AutoInc, O.PrimaryKey)
 
     def orderId = column[Long]("orderid")
 
@@ -449,41 +493,61 @@ trait OrderStockRecordComponent extends WithMyDriver {
 
     import models.current.dao._
 
-    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.id)
 
     //def productIdFK = foreignKey("fk_role_id", productId, products)(_.id) //TBD
 
     //def stockRecordId = foreignKey("fk_role_id", productId, products)(_.id) //TBD
 
-    def * = (orderId, productId, stockRecordId, dateMetaData, userMetaData) <>(OrderStockRecord.tupled, OrderStockRecord.unapply)
+    def * = (id.?, orderId, productId, stockRecordId, dateMetaData, userMetaData) <>(OrderStockRecord.tupled, OrderStockRecord.unapply)
+  }
+
+  object OrderStockRecords extends Crud[OrderStockRecords, OrderStockRecord, Long] {
+    val query = TableQuery[OrderStockRecords]
+
+    override def withId(orderstockrecord: OrderStockRecord, id: Long)(implicit session: Session): OrderStockRecord
+    = orderstockrecord.copy(id = Option(id))
   }
 
 }
 
-trait OrderPaymentComponent extends WithMyDriver {
+trait OrderPaymentComponent extends CrudComponent {
 
   import driver.simple._
   import models.current.dao._
 
-  class OrderPayments(tags: Tag) extends Table[OrderPayment](tags, "orderpayment") {
+  class OrderPayments(tags: Tag) extends Table[OrderPayment](tags, "orderpayment") with EntityTable[Long] {
+
+    def id = column[Long]("order_payment_id", O.AutoInc, O.PrimaryKey)
+
     def orderId = column[Long]("orderid")
 
     def paymentId = column[Long]("paymentid")
 
-    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.id)
 
     //def productIdFK = foreignKey("fk_product_id", productId, products)(_.id) //TBD
-    def * = (orderId, paymentId) <>(OrderPayment.tupled, OrderPayment.unapply)
+    def * = (id.?, orderId, paymentId) <>(OrderPayment.tupled, OrderPayment.unapply)
+  }
+
+  object OrderPayments extends Crud[OrderPayments, OrderPayment, Long] {
+    val query = TableQuery[OrderPayments]
+
+    override def withId(orderpayment: OrderPayment, id: Long)(implicit session: Session): OrderPayment
+    = orderpayment.copy(id = Option(id))
   }
 
 }
 
-trait OrderPriceComponent extends WithMyDriver {
+trait OrderPriceComponent extends CrudComponent {
 
   import driver.simple._
   import models.current.dao._
 
-  class OrderPrices(tags: Tag) extends Table[OrderPrice](tags, "orderprices") {
+  class OrderPrices(tags: Tag) extends Table[OrderPrice](tags, "orderprices") with EntityTable[Long] {
+
+    def id = column[Long]("order_price_id", O.AutoInc, O.PrimaryKey)
+
     def orderId = column[Long]("orderid")
 
     def orderPriceId = column[Long]("orderpriceid")
@@ -492,23 +556,30 @@ trait OrderPriceComponent extends WithMyDriver {
 
     def taxId = column[Long]("taxid")
 
-    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.id)
 
     //def taxIdFK = foreignKey("fk_tax_id", taxId, taxes)(_.id) //TBD
     //def orderPriceIdFK = foreignKey("fk_tax_id", orderPriceId, orderprices)(_.id) //TBD
-    def * = (orderId, orderPriceId, cost, taxId) <>(OrderPrice.tupled, OrderPrice.unapply)
+    def * = (id.?, orderId, orderPriceId, cost, taxId) <>(OrderPrice.tupled, OrderPrice.unapply)
+  }
+
+  object OrderPrices extends Crud[OrderPrices, OrderPrice, Long] {
+    val query = TableQuery[OrderPrices]
+
+    override def withId(orderprice: OrderPrice, id: Long)(implicit session: Session): OrderPrice
+    = orderprice.copy(id = Option(id))
   }
 
 }
 
-trait OrderLineComponent extends WithMyDriver {
+trait OrderLineComponent extends CrudComponent {
 
   import driver.simple._
   import models.current.dao._
 
-  class OrderLines(tags: Tag) extends Table[OrderLine](tags, "orderlines") {
+  class OrderLines(tags: Tag) extends Table[OrderLine](tags, "orderlines") with EntityTable[Long] {
 
-    def orderLineId = column[Long]("orderlineid", O.AutoInc, O.PrimaryKey)
+    def id = column[Long]("orderlineid", O.AutoInc, O.PrimaryKey)
 
     def orderId = column[Long]("orderid")
 
@@ -520,27 +591,34 @@ trait OrderLineComponent extends WithMyDriver {
 
     def taxId = column[Long]("taxid")
 
-    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.id)
 
     //def productIdFK = foreignKey("fk_product_id", productId, products)(_.id) //TBD
     //def taxIdFK = foreignKey("fk_tax_id", taxId, taxes)(_.id) //TBD
-    def * = (orderLineId, orderId, productId, quantity, price, taxId) <>(OrderLine.tupled, OrderLine.unapply)
+    def * = (id.?, orderId, productId, quantity, price, taxId) <>(OrderLine.tupled, OrderLine.unapply)
+  }
+
+  object OrderLines extends Crud[OrderLines, OrderLine, Long] {
+    val query = TableQuery[OrderLines]
+
+    override def withId(orderline: OrderLine, id: Long)(implicit session: Session): OrderLine
+    = orderline.copy(id = Option(id))
   }
 
 }
 
-trait OrderLifeCycleComponent extends WithMyDriver {
+trait OrderLifeCycleComponent extends CrudComponent {
 
   import driver.simple._
   import models.current.dao._
 
-  class OrderLifeCycles(tags: Tag) extends Table[OrderLifeCycle](tags, "orderlifecycle") {
+  class OrderLifeCycles(tags: Tag) extends Table[OrderLifeCycle](tags, "order_lifecycle") with EntityTable[Long] {
 
-    def orderLifeCycleId = column[Long]("orderlifecycleid", O.AutoInc, O.PrimaryKey)
+    def id = column[Long]("order_lifecycle_id", O.AutoInc, O.PrimaryKey)
 
     def status = column[OrderStatus]("status")
 
-    def statusLabel = column[String]("statuslabel")
+    def statusLabel = column[String]("status_label")
 
     def description = column[String]("description")
 
@@ -548,23 +626,30 @@ trait OrderLifeCycleComponent extends WithMyDriver {
 
     def commentId = column[Long]("commentid")
 
-    def commentsIdFK = foreignKey("fk_comments_id", commentId, ordercomments)(_.commentId) // need to discuss
+    def commentsIdFK = foreignKey("fk_comments_id", commentId, ordercomments)(_.id) // need to discuss
 
-    def * = (orderLifeCycleId, status, statusLabel, description, commentId, date) <>(OrderLifeCycle.tupled, OrderLifeCycle.unapply)
+    def * = (id.?, status, statusLabel, description, commentId, date) <>(OrderLifeCycle.tupled, OrderLifeCycle.unapply)
+  }
+
+  object OrderLifeCycles extends Crud[OrderLifeCycles, OrderLifeCycle, Long] {
+    val query = TableQuery[OrderLifeCycles]
+
+    override def withId(orderlifecycle: OrderLifeCycle, id: Long)(implicit session: Session): OrderLifeCycle
+    = orderlifecycle.copy(id = Option(id))
   }
 
 }
 
-trait OrderSummaryComponent extends WithMyDriver {
+trait OrderSummaryComponent extends CrudComponent {
 
   import driver.simple._
   import models.current.dao._
 
-  class OrderSummaries(tags: Tag) extends Table[OrderSummary](tags, "ordersummary") {
+  class OrderSummaries(tags: Tag) extends Table[OrderSummary](tags, "ordersummary") with EntityTable[Long] {
 
-    def orderSummaryId = column[Long]("ordersummaryid", O.AutoInc, O.PrimaryKey)
+    def id = column[Long]("order_summary_id", O.AutoInc, O.PrimaryKey)
 
-    def orderId = column[Long]("orderid")
+    def orderId = column[Long]("order_id")
 
     def orderNumber = column[String]("order_number")
 
@@ -580,23 +665,30 @@ trait OrderSummaryComponent extends WithMyDriver {
 
     def dateMetaData = (createdOn, modifiedOn) <>(DateMetaData.tupled, DateMetaData.unapply)
 
-    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.orderId)
+    def orderIdFK = foreignKey("fk_order_id", orderId, orders)(_.id)
 
-    def * = (orderSummaryId, orderId, orderNumber, status, amount, productNames, dateMetaData) <>(OrderSummary.tupled, OrderSummary.unapply)
+    def * = (id.?, orderId, orderNumber, status, amount, productNames, dateMetaData) <>(OrderSummary.tupled, OrderSummary.unapply)
+  }
+
+  object OrderSummaries extends Crud[OrderSummaries, OrderSummary, Long] {
+    val query = TableQuery[OrderSummaries]
+
+    override def withId(ordersummary: OrderSummary, id: Long)(implicit session: Session): OrderSummary
+    = ordersummary.copy(id = Option(id))
   }
 
 }
 
 //case class OrderDetail(productSummaryId: List[Long], lifeCycleId: Long, shippingAddressId: Long, owner: Long,
 //dateMetaData: DateMetaData, userMetaData: UserMetaData, lineItems: List[Long])
-trait OrderDetailComponent extends WithMyDriver {
+trait OrderDetailComponent extends CrudComponent {
 
   import driver.simple._
   import models.current.dao._
 
-  class OrderDetails(tags: Tag) extends Table[OrderDetail](tags, "orderdetails") {
+  class OrderDetails(tags: Tag) extends Table[OrderDetail](tags, "orderdetails") with EntityTable[Long] {
 
-    def orderDetailId = column[Long]("order_detail_id", O.AutoInc, O.PrimaryKey)
+    def id = column[Long]("order_detail_id", O.AutoInc, O.PrimaryKey)
 
     def productSummaryId = column[Long]("prooductsummaryid")
 
@@ -620,14 +712,21 @@ trait OrderDetailComponent extends WithMyDriver {
 
     def lineItemsId = column[Long]("line_items_id")
 
-    def lifecycleIdFK = foreignKey("fk_lifecycle_id", lifeCycleId, lifecycles)(_.orderLifeCycleId)
+    def lifecycleIdFK = foreignKey("fk_lifecycle_id", lifeCycleId, lifecycles)(_.id)
 
     def shippingAddressIdFK = foreignKey("fk_shippingaddress_id", shippingAddressId, orders)(_.shippingAddressId)
 
-    def lineItemsIdFK = foreignKey("fk_lineitems_id", lineItemsId, lineitems)(_.orderLineId)
+    def lineItemsIdFK = foreignKey("fk_lineitems_id", lineItemsId, lineitems)(_.id)
 
-    def * = (orderDetailId, productSummaryId, lifeCycleId, shippingAddressId, owner, dateMetaData, userMetaData, lineItemsId) <>
+    def * = (id.?, productSummaryId, lifeCycleId, shippingAddressId, owner, dateMetaData, userMetaData, lineItemsId) <>
       (OrderDetail.tupled, OrderDetail.unapply)
+  }
+
+  object OrderDetails extends Crud[OrderDetails, OrderDetail, Long] {
+    val query = TableQuery[OrderDetails]
+
+    override def withId(orderdetail: OrderDetail, id: Long)(implicit session: Session): OrderDetail
+    = orderdetail.copy(id = Option(id))
   }
 
 }
