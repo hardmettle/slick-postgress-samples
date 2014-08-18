@@ -11,6 +11,25 @@ import play.api.data.format.Formatter
 /**
  * Created by harsh on 10/8/14.
  */
+
+sealed trait BaseInventory extends Entity[Long] {
+  def id: Option[Long]
+  def productId: Long
+  def total: Int
+  def saleableQuantity: Int
+  def offlineQuantity: Int
+  def threshold: Int
+  def availableQuantity: Int
+  def soldQuantity: Int
+  def offlineAvailableQuantity: Int
+  def offlineSoldQuantity: Int
+  def inStock: Int
+  def inStockOffline: Int
+  def thresholdOffline: Int
+  def dateMetaData: DateMetaData
+  def userMetaData: UserMetaData
+  def inventoryStatus: InventoryStatus
+}
 /*
 Inventory class representing detailed information about inventory record of products
 
@@ -40,7 +59,7 @@ case class Inventory(id: Option[Long], productId: Long, total: Int, saleableQuan
                      offlineQuantity: Int, threshold: Int, availableQuantity: Int,
                      soldQuantity: Int, offlineAvailableQuantity: Int, offlineSoldQuantity: Int ,
                      inStock: Int, inStockOffline: Int , thresholdOffline: Int, dateMetaData: DateMetaData, 
-                     userMetaData: UserMetaData,inventoryStatus: InventoryStatus) extends Entity[Long]
+                     userMetaData: UserMetaData,inventoryStatus: InventoryStatus) extends BaseInventory
 
 trait InventoryComponent extends CrudComponent {
 
