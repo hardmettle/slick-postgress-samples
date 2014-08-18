@@ -52,6 +52,37 @@ sealed trait BaseAddOn extends Entity[Long] {
   def precision: Int
 }
 
+sealed trait BaseOffer extends Entity[Long] {
+  
+  def title: String
+
+  def media: List[MediaType]
+
+  def shortDescription: String
+
+  def adSpace: String
+
+  def disclaimer: String
+
+  def detail: String
+
+  def startDate: DateTime
+
+  def endDate: DateTime
+
+  def effectiveStartDate: DateTime
+
+  def effectiveEndDate: DateTime
+
+  def status: OfferStatus
+
+  def dateMetaData: DateMetaData
+
+  def userMetaData: UserMetaData
+
+  def offerSettingsId: Long
+}
+
 case class OtherCharge(id: Option[Long], amount: Double, chargeType: ChargeType, addOnType: AddOnType, title: String,
                        dateMetaData: DateMetaData, userMetaData: UserMetaData, precision: Int) extends BaseAddOn
 
@@ -59,7 +90,7 @@ case class OtherCharge(id: Option[Long], amount: Double, chargeType: ChargeType,
 case class Offer(id: Option[Long], title: String, media: List[MediaType],
                  shortDescription: String, adSpace: String, disclaimer: String, detail: String, startDate: DateTime,
                  endDate: DateTime, effectiveStartDate: DateTime, effectiveEndDate: DateTime, status: OfferStatus,
-                 dateMetaData: DateMetaData, userMetaData: UserMetaData, offerSettingsId: Long) extends Entity[Long]
+                 dateMetaData: DateMetaData, userMetaData: UserMetaData, offerSettingsId: Long) extends BaseOffer
 
 case class Price(id: Option[Long], productGroupId: Option[Long], productId: Long, cost: Double, unit: Double, retail: Double,
                  threshold: Double, lowerLimit: Double, upperLimit: Double, dateMetaData: DateMetaData, userMetaData: UserMetaData,
