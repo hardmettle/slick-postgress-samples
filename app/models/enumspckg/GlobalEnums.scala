@@ -12,7 +12,7 @@ object Status extends Enumeration{
 }
 object AddressType extends Enumeration{
   type AddressType = Value
-  val Home,Office = Value
+  val Home,Office,Shipping,Billing = Value
 }
 object MediaType extends Enumeration{
   type MediaType = Value

@@ -22,7 +22,7 @@ with OrderLineComponent with InventoryComponent{
   //object roles extends TableQuery(new Roles(_))
   object baseroles extends TableQuery(tag => new BaseRoles(tag))
   //val roles = TableQuery[Roles]
-  val orders = TableQuery(new Orders(_))
+  object orders  extends  TableQuery(tag => new BaseOrders(tag))
   val orderproductcommentusers = TableQuery(new OrderProductCommentUsers(_))
   val ordercomments = TableQuery(new Comments(_))
   val lifecycles = TableQuery(new OrderLifeCycles(_))

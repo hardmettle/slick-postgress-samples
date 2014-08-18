@@ -39,9 +39,22 @@ sealed trait GlobalPrice extends Entity[Long] {
   def status: PriceStatus
 }
 
-case class OtherCharge(id: Option[Long], amount: Double, chargeType: ChargeType) extends Entity[Long]
+sealed trait BaseAddOn extends Entity[Long] {
 
-case class BaseAddOn(id: Long, addOnType: AddOnType, title: String, dateMetaData: DateMetaData, userMetaData: UserMetaData, precision: Int)
+  def addOnType: AddOnType
+
+  def title: String
+
+  def dateMetaData: DateMetaData
+
+  def userMetaData: UserMetaData
+
+  def precision: Int
+}
+
+case class OtherCharge(id: Option[Long], amount: Double, chargeType: ChargeType, addOnType: AddOnType, title: String,
+                       dateMetaData: DateMetaData, userMetaData: UserMetaData, precision: Int) extends BaseAddOn
+
 
 case class Offer(id: Option[Long], title: String, media: List[MediaType],
                  shortDescription: String, adSpace: String, disclaimer: String, detail: String, startDate: DateTime,
@@ -179,7 +192,25 @@ trait OtherChargeComponent extends CrudComponent {
 
     def chargeType = column[ChargeType]("charge_type")
 
-    def * = (id, amount, chargeType) <>(OtherCharge.tupled, OtherCharge.unapply)
+    def addOnType = column[AddOnType]("add_on_type")
+
+    def title = column[String]("title")
+
+    def createdOn = column[DateTime]("created_on")
+
+    def modifiedOn = column[Option[DateTime]]("modified_on")
+
+    def dateMetaData = (createdOn, modifiedOn) <>(DateMetaData.tupled, DateMetaData.unapply)
+
+    def createdBy = column[Long]("created_by")
+
+    def modifiedBy = column[Option[Long]]("modified_by")
+
+    def userMetaData = (createdBy, modifiedBy) <>(UserMetaData.tupled, UserMetaData.unapply)
+
+    def precision = column[Int]("precision")
+
+    def * = (id.?, amount, chargeType, addOnType, title, dateMetaData, userMetaData, precision) <>(OtherCharge.tupled, OtherCharge.unapply)
   }
 
   object OtherCharges extends Crud[OtherCharges, OtherCharge, Long] {
@@ -191,5 +222,3 @@ trait OtherChargeComponent extends CrudComponent {
   }
 
 }
-
-//trait BaseAddOn(id: Long, addOnType: AddOnType, title: String, dateMetaData: DateMetaData, userMetaData: UserMetaData, precision: Int)

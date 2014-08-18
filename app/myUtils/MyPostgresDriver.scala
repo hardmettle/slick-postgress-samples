@@ -1,6 +1,7 @@
 package myUtils
 
 import com.github.tminglei.slickpg._
+import enumspckg.AddOnType._
 
 import slick.driver.PostgresDriver
 
@@ -68,6 +69,37 @@ with PgPostGISSupport {
 
     implicit val inventoryStatusExtensionMethodsBuilder = createEnumColumnExtensionMethodsBuilder(InventoryStatus)
     implicit val inventoryStatusOptionColumnExtensionMethodsBuilder = createEnumOptionColumnExtensionMethodsBuilder(InventoryStatus)
+
+
+    implicit val priceStatusTypeMapper = createEnumJdbcType("state",PriceStatus)
+    implicit val priceStatusListTypeMapper = createEnumListJdbcType("state",PriceStatus)
+
+    implicit val priceStatusExtensionMethodsBuilder = createEnumColumnExtensionMethodsBuilder(PriceStatus)
+    implicit val priceStatusOptionColumnExtensionMethodsBuilder = createEnumOptionColumnExtensionMethodsBuilder(PriceStatus)
+
+    implicit val mediaTypeTypeMapper = createEnumJdbcType("state",MediaType)
+    implicit val mediaTypeListTypeMapper = createEnumListJdbcType("state",MediaType)
+
+    implicit val mediaTypeExtensionMethodsBuilder = createEnumColumnExtensionMethodsBuilder(MediaType)
+    implicit val mediaTypeOptionColumnExtensionMethodsBuilder = createEnumOptionColumnExtensionMethodsBuilder(MediaType)
+
+    implicit val offerStatusTypeMapper = createEnumJdbcType("state",OfferStatus)
+    implicit val offerStatusListTypeMapper = createEnumListJdbcType("state",OfferStatus)
+
+    implicit val offerStatusExtensionMethodsBuilder = createEnumColumnExtensionMethodsBuilder(OfferStatus)
+    implicit val offerStatusOptionColumnExtensionMethodsBuilder = createEnumOptionColumnExtensionMethodsBuilder(OfferStatus)
+
+    implicit val chargeTypeTypeMapper = createEnumJdbcType("state",ChargeType)
+    implicit val chargeTypeListTypeMapper = createEnumListJdbcType("state",ChargeType)
+
+    implicit val chargeTypeExtensionMethodsBuilder = createEnumColumnExtensionMethodsBuilder(ChargeType)
+    implicit val chargeTypeOptionColumnExtensionMethodsBuilder = createEnumOptionColumnExtensionMethodsBuilder(ChargeType)
+
+    implicit val addOnTypeTypeMapper = createEnumJdbcType("state",AddOnType)
+    implicit val addOnTypeListTypeMapper = createEnumListJdbcType("state",AddOnType)
+
+    implicit val addOnTypeExtensionMethodsBuilder = createEnumColumnExtensionMethodsBuilder(AddOnType)
+    implicit val addOnTypeOptionColumnExtensionMethodsBuilder = createEnumOptionColumnExtensionMethodsBuilder(AddOnType)
   }
 
   //////

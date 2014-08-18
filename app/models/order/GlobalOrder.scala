@@ -86,11 +86,8 @@ Shipping Address
 @param alternatePhone alternate phone number of user where he can be contacted . It is optional
 
  */
-case class Order(id: Option[Long], orderNumber: String, amount: Double, numberOfItems: Int, ownerId: Long, products: List[String],
-                 userMetaData: UserMetaData, displayStatus: String,
-                 line1: String, line2: String, line3: Option[String], zipCode: Long, landmark: String,
-                 location: String, state: State, country: Country, addressType: AddressType,
-                 phone: String, alternatePhone: Option[String], shippingAddressId: Long) extends BaseOrder with ShippingAddress
+case class Order(val id: Option[Long], orderNumber: String, amount: Double, numberOfItems: Int, ownerId: Long, products: List[String],
+                 userMetaData: UserMetaData, displayStatus: String, billingAddressId: Option[Long], shippingAddressId: Option[Long]) extends BaseOrder
 
 /*
 EOrder class which represents one of the type of orders a user can place.It is generally the order which don't need shipping
@@ -107,7 +104,7 @@ and can be downloaded or sent online . for e.g pdf books .Extends the super trai
 @param displayStatus the status of display of the order on UI
 */
 
-case class EOrder(id: Option[Long], orderNumber: String, amount: Double, numberOfItems: Int, ownerId: Long, products: List[String],
+case class EOrder(val id: Option[Long], orderNumber: String, amount: Double, numberOfItems: Int, ownerId: Long, products: List[String],
                   userMetaData: UserMetaData, displayStatus: String) extends BaseOrder
 
 /*
@@ -248,7 +245,7 @@ dateMetaData,userMetaData, lineItems
 @param lineItemsId It is a list of line items of the product included in order
  */
 
-case class OrderDetail(id: Option[Long], productSummaryId: Long, lifeCycleId: Long, shippingAddressId: Long, owner: Long,
+case class OrderDetail(id: Option[Long], productSummaryId: Long, lifeCycleId: Long, shippingAddressId: Option[Long], owner: Long,
                        dateMetaData: DateMetaData, userMetaData: UserMetaData, lineItemsId: Long) extends Entity[Long]
 
 
@@ -259,140 +256,8 @@ trait OrderComponent extends CrudComponent {
 
 
   import driver.simple._
-/*
+
   abstract class AbstractOrders[T](tags: Tag) extends Table[T](tags, "orders") with EntityTable[Long] {
-
-    def id = column[Long]("orderid", O.AutoInc, O.PrimaryKey)
-
-    def orderNumber = column[String]("order_number")
-
-    def amount = column[Double]("amount")
-
-    def numberOfItems = column[Int]("number_of_items")
-
-    def ownerId = column[Long]("owner_id")
-
-    def products = column[List[String]]("products")
-
-    def createdBy = column[Long]("created_by")
-
-    def modifiedBy = column[Option[Long]]("modified_by")
-
-    def userMetaData = (createdBy, modifiedBy) <>(UserMetaData.tupled, UserMetaData.unapply)
-
-    def displayStatus = column[String]("display_status")
-
-    def line1 = column[String]("line1")
-
-    def line2 = column[String]("line1")
-
-    def line3 = column[Option[String]]("line3")
-
-    def zipCode = column[Long]("zip_code")
-
-    def landmark = column[String]("landmark")
-
-    def location = column[String]("location")
-
-    def state = column[State]("state")
-
-    def country = column[Country]("country")
-
-    def addressType = column[AddressType]("address_type")
-
-    def phone = column[String]("phone")
-
-    def alternatePhone = column[Option[String]]("alternate_phone")
-
-    def shippingAddressId = column[Long]("shipping_address_id")
-
-    def * : ProvenShape[T]
-  }
-
-  class BaseOrders(tags: Tag) extends AbstractOrders[BaseOrder](tags) {
-    def * : ProvenShape[BaseOrder] = (id.?, orderNumber, amount, numberOfItems, ownerId, products,
-      userMetaData, displayStatus, line1, line2, line3, zipCode,
-      landmark, location, state, country, addressType, phone, alternatePhone, shippingAddressId).shaped <>( { t => t match {
-      case (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) => Order(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t): BaseOrder
-      case (a, b, c, d, e, f, g, h,i @ None, j @ None, k @ None , l @ None , m @ None, n @ None ,o @ None , p @ None, q @ None, r @ None, s @ None, t @ None) =>
-        EOrder(a, b, c, d, e, f, g, h): BaseOrder
-    }
-    },
-      { t: BaseOrder => t match {
-      case Order(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) =>
-        Some((a, b, c, d, e, f, g,h, i, j, k, l, m, n, o, p, q, r, s, t))
-      case EOrder(a, b, c, d, e, f, g, h, None,  None,  None ,None , None, None ,None ,None, None, None, None,None) =>
-        Some((a, b, c, d, e, f, g, h))
-      case _ => None
-    }
-    }
-      )
-  }
-
-*/
-  class Orders(tags: Tag) extends Table[Order](tags, "orders") with EntityTable[Long] {
-
-    def id = column[Long]("orderid", O.AutoInc, O.PrimaryKey)
-
-    def orderNumber = column[String]("order_number")
-
-    def amount = column[Double]("amount")
-
-    def numberOfItems = column[Int]("number_of_items")
-
-    def ownerId = column[Long]("owner_id")
-
-    def products = column[List[String]]("products")
-
-    def createdBy = column[Long]("created_by")
-
-    def modifiedBy = column[Option[Long]]("modified_by")
-
-    def userMetaData = (createdBy, modifiedBy) <>(UserMetaData.tupled, UserMetaData.unapply)
-
-    def displayStatus = column[String]("display_status")
-
-    def line1 = column[String]("line1")
-
-    def line2 = column[String]("line1")
-
-    def line3 = column[Option[String]]("line3")
-
-    def zipCode = column[Long]("zip_code")
-
-    def landmark = column[String]("landmark")
-
-    def location = column[String]("location")
-
-    def state = column[State]("state")
-
-    def country = column[Country]("country")
-
-    def addressType = column[AddressType]("address_type")
-
-    def phone = column[String]("phone")
-
-    def alternatePhone = column[Option[String]]("alternate_phone")
-
-    def shippingAddressId = column[Long]("shipping_address_id")
-
-    def * = (id.?, orderNumber, amount, numberOfItems, ownerId, products, userMetaData, displayStatus, line1, line2, line3, zipCode,
-      landmark, location, state, country, addressType, phone, alternatePhone, shippingAddressId) <>(Order.tupled, Order.unapply)
-  }
-
-  object Orders extends Crud[Orders, Order, Long] {
-    val query = TableQuery[Orders]
-
-    override def withId(order: Order, id: Long)(implicit session: Session): Order = order.copy(id = Option(id))
-  }
-
-}
-
-trait EOrderComponent extends CrudComponent {
-
-  import driver.simple._
-
-  class EOrders(tags: Tag) extends Table[EOrder](tags, "eorders") with EntityTable[Long] {
 
     def id = column[Long]("order_id", O.AutoInc, O.PrimaryKey)
 
@@ -414,18 +279,44 @@ trait EOrderComponent extends CrudComponent {
 
     def displayStatus = column[String]("display_status")
 
-    def * = (id.?, orderNumber, amount, numberOfItems, ownerId, products, userMetaData, displayStatus) <>
-      (EOrder.tupled, EOrder.unapply)
+    def billingAddressId = column[Option[Long]]("billing_address_id")
 
+    def shippingAddressId = column[Option[Long]]("shipping_address_id")
+
+    def * : ProvenShape[T]
   }
 
-  object EOrders extends Crud[EOrders, EOrder, Long] {
-    val query = TableQuery[EOrders]
+  class BaseOrders(tags: Tag) extends AbstractOrders[BaseOrder](tags) {
+    def * : ProvenShape[BaseOrder] = (id.?, orderNumber, amount, numberOfItems, ownerId, products,
+      userMetaData, displayStatus, billingAddressId, shippingAddressId).shaped <>( { t => t match {
 
-    override def withId(eorder: EOrder, id: Long)(implicit session: Session): EOrder = eorder.copy(id = Option(id))
+       case (a, b, c, d, e, f, g, h, i@None, j@None) =>  EOrder(a, b, c, d, e, f, g, h): BaseOrder
+        case (a, b, c, d, e, f, g, h, i, j) => Order(a, b, c, d, e, f, g, h, i, j): BaseOrder
+
+      }
+    }, { t:BaseOrder => t match {
+        case EOrder(a, b, c, d, e, f, g, h) =>  Some((a, b, c, d, e, f, g, h, None, None))
+        case Order(a, b, c, d, e, f, g, h, i, j) =>          Some((a, b, c, d, e, f, g, h, i, j))
+        case _ => None
+     }
+    }
+      )
   }
+
+  object BaseOrders extends Crud[BaseOrders, BaseOrder, Long] {
+    val query = TableQuery[BaseOrders]
+    override def withId(baseorder:BaseOrder, id: Long)(implicit session: Session): BaseOrder = baseorder match {
+
+      case x @ EOrder(_,_,_,_,_,_,_,_) => x.copy(id = Option(id))
+      case x @ Order(_,_,_,_,_,_,_,_,_,_) => x.copy(id = Option(id))
+    }
+  }
+
+
+
 
 }
+
 
 //import models.or//
 trait CommentComponent extends CrudComponent {
@@ -765,7 +656,7 @@ trait OrderDetailComponent extends CrudComponent {
 
     def lifeCycleId = column[Long]("lifecycleid")
 
-    def shippingAddressId = column[Long]("shippingaddressid")
+    def shippingAddressId = column[Option[Long]]("shippingaddressid")
 
     def owner = column[Long]("owner")
 
@@ -785,7 +676,7 @@ trait OrderDetailComponent extends CrudComponent {
 
     def lifecycleIdFK = foreignKey("fk_lifecycle_id", lifeCycleId, lifecycles)(_.id)
 
-    def shippingAddressIdFK = foreignKey("fk_shippingaddress_id", shippingAddressId, orders)(_.shippingAddressId)
+    def shippingAddressIdFK = foreignKey("fk_shipping_address_id", shippingAddressId, orders)(_.shippingAddressId)
 
     def lineItemsIdFK = foreignKey("fk_lineitems_id", lineItemsId, lineitems)(_.id)
 
