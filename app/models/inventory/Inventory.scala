@@ -1,6 +1,7 @@
 package inventory
 
 import enumspckg.InventoryStatus.InventoryStatus
+import models.{Entity, EntityTable, CrudComponent}
 import myUtils.WithMyDriver
 import org.joda.time.DateTime
 import utils.{UserMetaData, DateMetaData}
@@ -35,22 +36,20 @@ thresholdOffline,dateMetaData,userMetaData,status
 @param inventoryStatus
 
  */
-case class Inventory(inventoryId: Long, productId: Long, total: Int, saleableQuantity: Int,
+case class Inventory(id: Option[Long], productId: Long, total: Int, saleableQuantity: Int,
                      offlineQuantity: Int, threshold: Int, availableQuantity: Int,
                      soldQuantity: Int, offlineAvailableQuantity: Int, offlineSoldQuantity: Int ,
-                     inStock: Int, inStockOffline: Int , thresholdOffline: Int, dateMetaData: DateMetaData, userMetaData: UserMetaData,
-                     inventoryStatus: InventoryStatus) {
+                     inStock: Int, inStockOffline: Int , thresholdOffline: Int, dateMetaData: DateMetaData, 
+                     userMetaData: UserMetaData,inventoryStatus: InventoryStatus) extends Entity[Long]
 
-}
-
-trait InventoryComponent extends WithMyDriver {
+trait InventoryComponent extends CrudComponent {
 
   import driver.simple._
   import models.current.dao._
 
-  class Inventories(tags: Tag) extends Table[Inventory](tags, "inventories") {
+  class Inventories(tags: Tag) extends Table[Inventory](tags, "inventories") with EntityTable[Long]{
 
-    def inventoryId = column[Long]("inventory_id")
+    def id = column[Long]("inventory_id")
 
     def productId = column[Long]("product_id")
 
@@ -93,9 +92,16 @@ trait InventoryComponent extends WithMyDriver {
     //def productIDFK = foreignKey("fk_product_id",productId,products)(._productId)//TODO
 
 
-    def * = (inventoryId,productId,total,saleableQuantity,offlineQuantity,threshold,availableQuantity,soldQuantity,
+    def * = (id.?,productId,total,saleableQuantity,offlineQuantity,threshold,availableQuantity,soldQuantity,
       offlineAvailableQuantity,offlineSoldQuantity,inStock,inStockOffline,
       thresholdOffline,dateMetaData,userMetaData,inventoryStatus) <> (Inventory.tupled,Inventory.unapply)
   }
+  object Inventories extends Crud[Inventories, Inventory, Long] {
+    val query = TableQuery[Inventories]
+
+    override def withId(inventory: Inventory, id: Long)(implicit session: Session): Inventory
+    = inventory.copy(id = Option(id))
+  }
+
 
 }

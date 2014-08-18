@@ -12,7 +12,7 @@ import play.api.data.format.Formats
 import play.api.data.format.Formatter
 
 
-import scala.slick.lifted.{ForeignKeyQuery, Tag}
+import scala.slick.lifted.{ProvenShape, ForeignKeyQuery, Tag}
 
 //import scala.slick.profile.RelationalTableComponent.Table
 
@@ -257,8 +257,79 @@ case class OrderDetail(id: Option[Long], productSummaryId: Long, lifeCycleId: Lo
  */
 trait OrderComponent extends CrudComponent {
 
-  import driver.simple._
 
+  import driver.simple._
+/*
+  abstract class AbstractOrders[T](tags: Tag) extends Table[T](tags, "orders") with EntityTable[Long] {
+
+    def id = column[Long]("orderid", O.AutoInc, O.PrimaryKey)
+
+    def orderNumber = column[String]("order_number")
+
+    def amount = column[Double]("amount")
+
+    def numberOfItems = column[Int]("number_of_items")
+
+    def ownerId = column[Long]("owner_id")
+
+    def products = column[List[String]]("products")
+
+    def createdBy = column[Long]("created_by")
+
+    def modifiedBy = column[Option[Long]]("modified_by")
+
+    def userMetaData = (createdBy, modifiedBy) <>(UserMetaData.tupled, UserMetaData.unapply)
+
+    def displayStatus = column[String]("display_status")
+
+    def line1 = column[String]("line1")
+
+    def line2 = column[String]("line1")
+
+    def line3 = column[Option[String]]("line3")
+
+    def zipCode = column[Long]("zip_code")
+
+    def landmark = column[String]("landmark")
+
+    def location = column[String]("location")
+
+    def state = column[State]("state")
+
+    def country = column[Country]("country")
+
+    def addressType = column[AddressType]("address_type")
+
+    def phone = column[String]("phone")
+
+    def alternatePhone = column[Option[String]]("alternate_phone")
+
+    def shippingAddressId = column[Long]("shipping_address_id")
+
+    def * : ProvenShape[T]
+  }
+
+  class BaseOrders(tags: Tag) extends AbstractOrders[BaseOrder](tags) {
+    def * : ProvenShape[BaseOrder] = (id.?, orderNumber, amount, numberOfItems, ownerId, products,
+      userMetaData, displayStatus, line1, line2, line3, zipCode,
+      landmark, location, state, country, addressType, phone, alternatePhone, shippingAddressId).shaped <>( { t => t match {
+      case (a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) => Order(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t): BaseOrder
+      case (a, b, c, d, e, f, g, h,i @ None, j @ None, k @ None , l @ None , m @ None, n @ None ,o @ None , p @ None, q @ None, r @ None, s @ None, t @ None) =>
+        EOrder(a, b, c, d, e, f, g, h): BaseOrder
+    }
+    },
+      { t: BaseOrder => t match {
+      case Order(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t) =>
+        Some((a, b, c, d, e, f, g,h, i, j, k, l, m, n, o, p, q, r, s, t))
+      case EOrder(a, b, c, d, e, f, g, h, None,  None,  None ,None , None, None ,None ,None, None, None, None,None) =>
+        Some((a, b, c, d, e, f, g, h))
+      case _ => None
+    }
+    }
+      )
+  }
+
+*/
   class Orders(tags: Tag) extends Table[Order](tags, "orders") with EntityTable[Long] {
 
     def id = column[Long]("orderid", O.AutoInc, O.PrimaryKey)
